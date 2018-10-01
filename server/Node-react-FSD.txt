@@ -1,0 +1,9 @@
+- using passport for google's oath flow
+    - installing "passport" (2 modules)
+        - passport - general helpers for handling auth in Express apps
+        - passport strategy - Helpers for authenticating with one very specific method (email/pssword, google, facebook etc) - the number of ways I want to authenticate 
+                              defines how many strategy modules I need to install
+
+        - modules used in the course
+            - passport-google-oauth20
+            - passport
