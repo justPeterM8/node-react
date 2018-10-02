@@ -1,3 +1,5 @@
+THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things here too, I come here back to remind myself how to do stuff)
+
 - using passport for google's oath flow
     - installing "passport" (2 modules)
         - passport - general helpers for handling auth in Express apps
@@ -7,3 +9,159 @@
         - modules used in the course
             - passport-google-oauth20
             - passport
+
+    - how does the oauth work?
+        user clicks login and I am redirecting them to certain route, specified by me.
+        I have a route specified for that in my express app, that has passport authenticate method 'attached' after invoking it
+        so passport makes a request with clientID, clientSecret, scope and callbackURL.
+        After user grants permission to my app google redirects to callbackURL?code=2132/adsadsadakjn1221321 that code is information
+        that I can use in the second passport.authenticate call and after second authentication I get: 
+        
+        - accessToken that allows to get user's data and do some actions on behalf of this user (expires after some amount of time)
+        - refreshToken - allows to update accessToken
+
+        after all those steps there is only work on my side: creating record in db, login/logout etc.
+    - steps for using google oath
+        - getting clientID and clientSecret tokens
+            - registering the app in google.developers.console
+            - enable api
+            - library -> google+ in search
+            - create credentials
+                - left side-bar -> credentials
+                - oAuth client ID option
+            - consent screen - screen that is shown during "permission trigger"
+                - only app name is not optional (I guess) 
+
+            - what are these tokens?
+                - clientID - public token (not data), it is id of my app in google's servers
+                - clientSecret - confidential data, data only known by application and authorization server
+            
+        - storing these two tokens (basic version)
+            - server/config/keys.js
+                module.exports = { 
+                    googleClientID: '12323',
+                    googleClientSecret: '123'
+                };
+            
+            - .gitignore file update to skip this config file, so no confidential data will be commited 
+
+        - oauth error (400 uri_mismatch...)
+            - after passing http://localhost:5000/ as callback uri, there comes an error, the reason is quite simple
+              In code I have /auth/google/callback specified, I can not use / for this uri, since everybody knows my clientID 
+              and just changing uri to 'hacker.com/' will effect getting from google code that could be used to retrieve data that is why
+              certain route is specified for that, with localhost, in the future that will be changed too
+
+        - oauth with passport (google strategy)
+            passport.use(
+              new GoogleStrategy({
+                clientID: keys.googleClientID,
+                clientSecret: keys.googleClientSecret,
+                callbackURL: '/auth/google/callback' // url that will be used after user grants permission, there will be code attached, it is route to handle on my side
+              }, (accessToken, refreshToken, profile, done) => {
+                console.log('Access Token:', accessToken);
+                console.log('Refresh Token:', refreshToken);
+                console.log('profile:', profile);
+              })
+            );
+
+            app.get('/auth/google', passport.authenticate('google', { // google as name of strategy (it is configured in passport already)
+              scope: ['profile', 'email'] // scopes (things I want have access to)
+            }));
+
+            app.get('/auth/google/callback', passport.authenticate('google')); // passport allows to authenticate based on code in url
+
+- server structure refactor (I am not sure if this is better than using routes)
+    - auth routes
+        module.exports = (app) => {
+            app.get('/auth/google', passport.authenticate('google', { // google as name of strategy (it is configured in passport already)
+                scope: ['profile', 'email'] // scopes (things I want have access to)
+            }));
+
+            app.get('/auth/google/callback', passport.authenticate('google')); // passport allows to authenticate based on code in url
+        }
+    
+    - usage in index.js
+        require('./routes/authRoutes')(app);
+
+- theory of authentication
+    - http is stateless - two different requests can not share data (auth request won't tell nex request that user is authenticated)
+    - how does it work:
+        - after login process server returns a token, through which user will identify in other requests
+        - in cookie based authentication there is just cookie (header has value of Set-Cookie: 'random_token'), this cookie will be saved in browser
+          and all next requests will be made with that cookie in header 
+    
+    - user/password vs oauth
+        - in user/password data given by user is compared with data already stored in database, or in case someone is registering, just storing the data...
+        - in oauth user goes through the 3rd party authentication process every time, but I assume, that they have been here already and signed up
+          during which I stored some not changed by google data as id and compare it every time user tries to login, so I can identify them or store id data
+          when they appear first time
+
+- setting up remotely hosted mongodb - mLab (easy to configure, gives URI to connect)
+
+- user authetincation in practice (in code)
+    - user clicks sing up
+        - goes through oauth and comes code comes to:
+            there is:
+                - check if user already exists by googleID 
+                    - if exists done(null, existingUser) - no error, passing user found in db
+                    - if does not exist 
+                        new User({ googleId: profile.id }).save().then(user => { - create new user and invoke done with created one in then since async
+                          done(null, user);
+                        });
+
+            passport.use(
+              new GoogleStrategy(
+                {
+                  clientID: keys.googleClientID,
+                  clientSecret: keys.googleClientSecret,
+                  callbackURL: "/auth/google/callback" // url that will be used after user grants permission, there will be code attached, it is route to handle on my side
+                },
+                (accessToken, refreshToken, profile, done) => {
+                  User.findOne({ googleId: profile.id })
+                    .then(existingUser => {
+                      if (existingUser) {
+                        done(null, existingUser); // arg1: error object, arg2: data from db
+                      } else {
+                        new User({ googleId: profile.id }).save().then(user => {
+                          done(null, user);
+                        });
+                      }
+                    })
+                    .catch(err => {
+                      console.log(err);
+                    });
+                }
+              )
+            );
+    - after singnig up :
+        - this function takes his data and encodes, so cookie can store his unique data
+            passport.serializeUser((user, done) => {
+              // arg1: instance of user passed in done(null, user) in then of findOne or save below
+              done(null, user.id); // Using mongodb id (can access to id instead of _id.id), that will be in cookie
+            });
+
+    - to make this possible there need to be two middlewares applied, to use cookies in express and passport
+
+        app.use(
+          cookieSession({
+            maxAge: 30 * 24 * 60 * 60 * 1000, // how long cookie will be held in browser until it will expire
+            keys: [keys.cookieKey] // just random char sequence, it is array, so it will pick one if more declared
+          })
+        );
+
+        // Telling passport to use cookies to handle authentication
+        app.use(passport.initialize());
+        app.use(passport.session());
+
+    - if user makes a request, this method is invoked, to get user instance from cookie data
+        passport.deserializeUser((id, done) => {
+          User.findById(id).then((user) => {
+        		done(null, user)
+        	});
+        });
+
+    !IMPORTANT!: after deserializing user there comes user instance in req.user, so ready to use object
+    Basically passport is a tool that I need to tell, what data I want to use (encoded data), so 
+    everything will work under the hood
+
+    - logout user (passport does all the work attaching a special function that resets the cookie)
