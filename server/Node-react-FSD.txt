@@ -17,7 +17,7 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
         After user grants permission to my app google redirects to callbackURL?code=2132/adsadsadakjn1221321 that code is information
         that I can use in the second passport.authenticate call and after second authentication I get: 
         
-        - accessToken that allows to get user's data and do some actions on behalf of this user (expires after some amount of time)
+        - accessToken that allows to get user's data and do some actions on behalf of this user (expires after some time period)
         - refreshToken - allows to update accessToken
 
         after all those steps there is only work on my side: creating record in db, login/logout etc.
@@ -47,8 +47,8 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
 
         - oauth error (400 uri_mismatch...)
             - after passing http://localhost:5000/ as callback uri, there comes an error, the reason is quite simple
-              In code I have /auth/google/callback specified, I can not use / for this uri, since everybody knows my clientID 
-              and just changing uri to 'hacker.com/' will effect getting from google code that could be used to retrieve data that is why
+              In code I have /auth/google/callback specified, I can not use / for this uri (in google), since everybody knows my clientID 
+              and just changing uri to 'hacker.com/' will affect getting from google code that could be used to retrieve data that is why
               certain route is specified for that, with localhost, in the future that will be changed too
 
         - oauth with passport (google strategy)
@@ -100,8 +100,7 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
 
 - user authetincation in practice (in code)
     - user clicks sing up
-        - goes through oauth and comes code comes to:
-            there is:
+        - goes through oauth and code comes to:
                 - check if user already exists by googleID 
                     - if exists done(null, existingUser) - no error, passing user found in db
                     - if does not exist 
@@ -165,3 +164,13 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
     everything will work under the hood
 
     - logout user (passport does all the work attaching a special function that resets the cookie)
+
+- Setting up production and dev environment (there is different google api and mongodb setup for prod and dev)
+    - steps to do:
+        - creating dev file with hardcoded data (for local development) - this file is not committed
+        - creating prod file that has usage of local environment variables
+        - changing keys.js, where now it is decided what to require, based on NODE_ENV env variable
+    
+    - environemt variables setup on heroku
+        - reveal config vars
+        - using keys with name of key names form prod.js and values hardcoded like in dev.js (it is secure there)
