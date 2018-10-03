@@ -174,3 +174,11 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
     - environemt variables setup on heroku
         - reveal config vars
         - using keys with name of key names form prod.js and values hardcoded like in dev.js (it is secure there)
+
+- Problem with https vs http (400 uri_mismatch)
+    - in google https given
+    - what causes this - proxy used by heroku, google strategy can see that it is used so the callback comes without http, but I can trust heroku's proxy, at least I need to :D 
+    - solutions:
+        - adding some option to google strategy, that will ignore that heroku uses proxy
+            - proxy: true
+        - passing whole callback url with https
