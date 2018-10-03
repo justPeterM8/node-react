@@ -14,10 +14,9 @@ passport.serializeUser((user, done) => {
 
 // this function is responsible for deserializing user, from the state that serialize left it and it was stored in cookie to a instance held in db
 // arg1: id passed to done in serializeUser, arg2: done as callback, that shows when the work here is finished
-passport.deserializeUser((id, done) => {
-  User.findById(id).then((user) => {
-		done(null, user)
-	});
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findById(id);
+  done(null, user);
 });
 
 passport.use(
@@ -28,20 +27,13 @@ passport.use(
       callbackURL: "/auth/google/callback", // url that will be used after user grants permission, there will be code attached, it is route to handle on my side,
       proxy: true
     },
-    (accessToken, refreshToken, profile, done) => {
-      User.findOne({ googleId: profile.id })
-        .then(existingUser => {
-          if (existingUser) {
-            done(null, existingUser); // arg1: error object, arg2: data from db
-          } else {
-            new User({ googleId: profile.id }).save().then(user => {
-              done(null, user);
-            });
-          }
-        })
-        .catch(err => {
-          console.log(err);
-        });
+    async (accessToken, refreshToken, profile, done) => {
+      const existingUser = await User.findOne({ googleId: profile.id });
+      if (existingUser) {
+        return done(null, existingUser); // arg1: error object, arg2: data from db
+      }
+      const user = await new User({ googleId: profile.id }).save();
+      done(null, user);
     }
   )
 );

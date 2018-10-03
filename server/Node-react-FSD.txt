@@ -182,3 +182,67 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
         - adding some option to google strategy, that will ignore that heroku uses proxy
             - proxy: true
         - passing whole callback url with https
+
+- using react with express
+    - running client and server simultaneous (using concurrently)
+        - changes in package.json in server (three last scripts are responsible for that)
+            "scripts": {
+              "start": "node index.js",
+              "server": "nodemon index.js",
+              "client": "npm run start --prefix client",
+              "dev": "concurrently \"npm run server\" \"npm run client\""
+            },
+        - from this time npm run dev runs client and server in one console
+    
+    - conencting express server with react server (links)
+        - problem to face
+            - <a href="/google/auth" /> leading to localhost:3000 instead of localhost:5000 that express server is running on
+        - steps to do
+            - installing http-proxy-middleware
+            - creating file that sets up this middleware and exports it (can be found in client/src/setupProxy)
+            
+    - difference between react and express on dev and on production
+        - on dev env
+            - there are two servers on :3000 and :5000, that is why I need to use proxy, because all link would lead to localhost:3000 which is not my
+              express server on
+        - on prod
+            - babel and webpack after doing manually : react-scripts build get rid of server and creates structure:
+                - build/static
+                - static/css
+                - static/js
+                - static/media
+              all data is now ready to be "inserted" in express server structure so there will no longer be two servers
+        
+        - problems if I didn't go with this proxy approach
+            - cookies are held on localhost:3000, localhost:5000 wouldn't get requests with cookies included
+            - CORS request from :3000 to :5000 (treated like different domains)
+
+    - async-await
+        fetchAlbums = () => {
+            fetch('https://rallycoding.herokuapp.com/api/music_albums')
+                .then((res) => res.json()) // returning json, for chained then 
+                .then((json) => console.log(json));
+        };
+        
+        
+        fetchAlbumsAA = async () => {
+            const res = await fetch('https://rallycoding.herokuapp.com/api/music_albums');
+            const json = await res.json(); // returns Promise also 
+            console.log(json);
+        };
+        
+        fetchAlbumsAA();
+
+- client (first setups and component structure creation)
+    - main components used for setups
+        - index.js (upper layer) - responsible for redux setup
+        - App.js (lower layer) - responsible for React router setup
+    - used dependencies
+        - redux
+        - react-redux
+        - react-router-dom
+    
+    - redux high level structure
+        - two combined reducers 
+            - authReducer 
+            - surveysReducer
