@@ -246,3 +246,105 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
         - two combined reducers 
             - authReducer 
             - surveysReducer
+    - Routes setup
+        - all done within App.js, including BrowserRouter
+        - routes with switch (order is important in this approach, could use exact)
+        
+    - setting up css library (materializecss with npm)
+        - npm i --save materialize-css
+        - import 'materialize-css/dist/css/materialize.min.css'; - require that is enabled by webpack (there is need to point the css file)
+        - materialize requires root div with 'cointainer' class
+
+    - creating communication between client and express server
+        - in theory:
+            app component calls action creator, that makes a get request, to get information if user is logged in
+            basing on that information action type is selected and dispatched, authReducer gets this action and updates flag 
+            if user is logged in or not, that will affect header (its appearance)
+        
+        - modules used in this point
+            - axios - for requests
+            - redux-thunk - for making a async action creators that will handle asynchronous requests to api server
+
+        - set up steps (redux thunk)
+            - what does it do for me? 
+                - it detects in action creator if when I return a function and if I do, it passes dispatch function to it
+            - steps
+                import reduxThunk from 'redux-thunk';
+                const store = createStore(reducers, {}, applyMiddleware(reduxThunk)); // adding to middleware
+
+        - action creators and authReducer's behaviour in cooperation with App.js component
+            - action creators
+                - structure 
+                    - multiple action creator files (one index.js file and two other that will be imported)
+                    - types.js which holds all types of actions that are dispatched in the app
+
+                - using thunk (asynchronous action creator, I have access to dispatch method, so I decide when it is called)
+                    export const fetchUser = () => async dispatch => { // Getting dispatch, since I am returning a function from action creator
+                      const res = await axios.get("api/current_user");
+                      dispatch({
+                        type: actionTypes.FETCH_USER,
+                        payload: res.data
+                      });
+                    };
+            - App.js
+                - connecting using connect from 'react-redux'
+                    import * as actions from "../actions"; // this import is interesting, since I am just pointing at folder and index.js action creators are imported (possibilities to import to index.js more files ...)
+                    export default connect(
+                      null,
+                      actions //passing actions straight without mapDispatchToProps
+                    )(App);
+                
+                - fetching user (checking if user is logged in)
+                     componentDidMount() {
+                      this.props.fetchUser();
+                    }
+
+                - authReducer
+                    export default (state = null, action) => {
+                      switch (action.type) {
+                        case actionTypes.FETCH_USER: {
+                          return action.payload || false; // empty string is treated like false, but would return empty string, so if false ('') return false
+                        }
+                        default: {
+                          return state;
+                        }
+                      }
+                    };
+    
+                    standard reducer with setting data for whole reducer, not for object of state of this reducer
+                    so I access the data with state.auth in mapStateToProps, not state.auth.user, maybe that will be refactored
+
+                there is also one thing that lecturer does in other approach:
+                    renderContent = () => {
+                      switch (this.props.userState){
+                        case null: {
+                          return null;
+                        }
+                        case false: {
+                          return <li><a href="/auth/google">Login With Google</a></li>
+                        }
+                        default: {
+                          return <li><a>Logout</a></li>
+                        }
+                      }
+                    }
+
+                    this method is just invoked in jsx, to this point there was a if statement in render method that had
+                    the same purpose and data was passed to a variable, both approaches have adv/disadv I guess
+
+        - redirecting after logging out (two ways)
+            - a link to /api/logout - will cause refresh of browser page (easy to handle)
+            - ajax call - no refresh, but I will need to handle action creators, reducer and redirections on my own (faster, since no reload)
+
+            The real thing here is that I don't need to change anything in redux store, just another componentDidMount 
+            call and I know if someone is logged in or not and passport.logout() is handling cookies, so deserialize user
+            won't get any data after logout
+
+    - redirecting user (comparison)
+        - a - navigating to different HTML document
+        - Link - navigating to different route rendered by React router
+
+        - example of handling redirection to different routes basing on the information if user is logged in
+            <Link to={this.props.userAuthState ? '/surveys': '/'} className="left brand-logo">
+              Emaily
+            </Link>
