@@ -348,3 +348,113 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
             <Link to={this.props.userAuthState ? '/surveys': '/'} className="left brand-logo">
               Emaily
             </Link>
+- Billing
+    - high level rules
+        - never accept raw credit card numbers
+        - never store credit card numbers
+        - always use an outside payment processor (stripe is recommended (take care of security), recurly for monthly subs)
+        - fraud and chargebacks are a pain :D (monthly payments is hard)
+    
+    - using stripe in theory
+        - user clicks
+        - stripe generates form that I show
+        - data sent to stripe 
+        - stripe sends back tocken that represents charge
+        - I send token to my API 
+        - my API confirms that charge was successful
+        - adding credits to user's account
+
+    - setting up stripe
+        - creating stripe account
+        - getting clientID and clientSecret
+        - installing plugin to client side (react)
+            - react-stripe-checkout (react plugin that already uses checkout.js)
+        - adding pk and sk to config data (in server)
+        - problem there is no way to use ES2015 modules with some logic (only for common modules)
+          so there is no way to create keys.js with default exports
+
+            REMINDER: client side only cares about publishable key
+
+            - solution: (that is delivered by create-react-app)
+                - using custom evironment variables in react
+                    - it can be done in shell
+                    - it can be done in .env files in the root of project
+                        - .env as default
+                        - .env.local - local environment
+                        - .env.development, .env.test, .env.production
+                        - .env.development.local, .env.test.local, .env.production.local
+        
+        - creating essential files in /client
+            - .env.development, .env.production
+                - content (REACT_APP beginning is required)
+                    REACT_APP_STRIPE_KEY=pk_test_GZye7p2idQoqpMvtNqVAHAls
+            - accessing this data:
+                console.log('STRIPE KEY IS:', process.env.REACT_APP_STRIPE_KEY);
+                console.log('ENVIRONMENT IS:', process.env.NODE_ENV);
+
+            REMINDER: IF I WANTED TO USE ACTIVATED STRIPE (REAL TRANSACTIONS) THERE WOULD BE SECOND PUBLIC KEY
+                      THAT SHOULD BE USED IN PRODUCTION.JS
+    
+    - using stripe
+        - creating a class component (probably not required) that surrounds StripeCheckout component
+        - stripe checkout example usage
+            // amount in cents
+            // token mean callback from stripe API
+            // stripeKey taken from .env.development or .env.production, but react knows where we are now (this is pk)
+            <StripeCheckout 
+              name="Emaily"
+              description="5$ for 5 email credits"
+              amount={500}
+              token={token => this.props.handleToken(token)} // here is the moment to react on successful or unsuccessful payment, calling action creator
+              stripeKey={process.env.REACT_APP_STRIPE_KEY}
+            >
+              <button className="btn">Add Credits</button>
+            </StripeCheckout>
+            
+            child element for StripeCheckout is a button that triggers payment form (customization purpose)
+        - how does it work to this point
+            user clicks Add credits, a form is displayed, with data passed to StripeCheckout component, component that
+            is outer component to StripeCheckout is connected to redux, so it can call action creators, in callback action creator for
+            updating user data is called, in this action creator there is a post request done, that passes token that the callback receives
+            there I need to use "stripe" module for express to get information from token, update db data and return updated user data
+            so reducer can update redux store and header will be updated accordingly. To get information about how to handle this token
+            I need to go to stripe.com/docs/api/node#create_charge and in core resources there is a charges category, it is explained there
+            how to create a charge object
+
+        - parsing post/patch/put data, so I have access to it in req.body
+            const bodyParser = require('body-parser');
+            app.use(bodyParser.json());
+
+        - creating a charge object (with naive check if user is logged in)
+            app.post("/api/stripe", async (req, res) => {
+              if (!req.user) { // easy check if user is logged in 
+                return res.status(401).send({error: 'You must log in'});
+              }
+              const charge = await stripe.charges.create({
+                amount: 500,
+                currency: "usd",
+                description: "5$ for 5 credits",
+                source: req.body.id
+              });
+              req.user.credits += 5; // Access to user delivered by passport, but only if there is cookie (user logged in), that should be checked first
+              const user = await req.user.save(); // saving with mongoose
+              res.send(user);
+            });
+    
+    - middleware for authentication if user is logged in 
+        module.exports = (req, res, next) => { // next for "next middleware" in the chain
+          if (!req.user) {
+            return res.status(401).send({ error: 'You muist log in'});
+          }
+
+          next();
+        }
+
+        this can be imported and used in second argument of a route, there can be more middlewares 
+        app.post("/api/stripe", requireLogin, async (req, res) => {
+
+- deployment to heroku with routing and payment included
+    - problem: how to make express pick up routes that are defined in App.js (in react server, like /surveys (not def. in express)) on production build
+        - solution (high level):
+            - express needs to recognize that it has no specified routes like this and forward request to react-router
+            - express needs to know that particular file.js needs to be "used", so right page will appear

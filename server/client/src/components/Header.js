@@ -2,18 +2,24 @@ import React, { Component } from "react";
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 
+import Payments from './Payments';
+
 class Header extends Component {
   
   renderContent = () => {
     switch (this.props.userAuthState){
-      case null: {
+      case null: { // I don't know if user is logged in
         return null;
       }
-      case false: {
+      case false: { // User is not logged in
         return <li><a href="/auth/google">Login With Google</a></li>
       }
-      default: {
-        return <li><a href="/api/logout">Logout</a></li>
+      default: { // User is logged in
+        return [ // returning array, so "," between following elements
+          <li key="0"><Payments /></li>,
+          <li key="1" style={{margin: '0 10px'}}>Credits: {this.props.userAuthState.credits}</li>,
+          <li key="2"><a href="/api/logout">Logout</a></li>
+        ]
       }
     }
   }
