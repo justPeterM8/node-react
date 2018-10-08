@@ -475,3 +475,59 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
     - steps to do to deploy (in practice)
         - package.json inside server (adding new script) - installing and building all client dependencies
             "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix client && npm run build --prefix client"
+
+- email (survey)
+    - subdocument collections
+        - it has some limitations (4MB)
+
+    - creating a subdocument collection
+        const RecipientSchema = require('./Recipient');
+
+        const surveySchema = new Schema({
+        	title: String,
+        	body: String,
+        	subject: String,
+        	recipients: [RecipientSchema], // subdocument
+        	yes: {
+        		type: Number,
+        		default: 0
+        	},
+        	no: {
+        		type: Number,
+        		default: 0
+        	}
+        });
+    
+    - creating relationships in mongodb
+        _user: {type: Schema.Types.ObjectId, ref: 'User'} // _ is optional
+
+    - creating object of model that has a reference and subdocument collection
+        const survey = new Survey({
+	    		title,
+	    		subject,
+	    		body,
+	    		recipients: recipients.split(',') .map(email => ({ email: email.trim() })),
+	    		user: requ.user.id,
+	    		dateSent: Date.now()
+	    	})
+	    });
+
+    - mail sending process
+        - survey instance and email template are brought together and a single mail object is created
+        - http request sends this object to email provider
+
+    - good vs bad practice in creating a mailer objects
+        - BAD - for every recipient there is a male object created#
+        - GOOD - there is one mailer object for all recipeints that is passed to Email provider
+            - downside of this approach - every single user gets identical email
+            - solution to this problem - using sendgrid, that replaces all links with custom links that lead to sendgrid (they are building a matrix, to map data 
+                                         and I can get the data using their api), this process is a webhook
+    
+    
+    - sendgrid
+        - setup
+            - creating api key on the site
+            - adding it to prod and dev
+            - installing sendgrid dependency in server
+        - mailer setup
+        
