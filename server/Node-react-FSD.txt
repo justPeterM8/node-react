@@ -353,7 +353,7 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
         - never accept raw credit card numbers
         - never store credit card numbers
         - always use an outside payment processor (stripe is recommended (take care of security), recurly for monthly subs)
-        - fraud and chargebacks are a pain :D (monthly payments is hard)
+        - fraud and chargebacks are a pain :D (monthly payments are hard)
     
     - using stripe in theory
         - user clicks
@@ -412,11 +412,12 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
             </StripeCheckout>
             
             child element for StripeCheckout is a button that triggers payment form (customization purpose)
+
         - how does it work to this point
             user clicks Add credits, a form is displayed, with data passed to StripeCheckout component, component that
             is outer component to StripeCheckout is connected to redux, so it can call action creators, in callback action creator for
             updating user data is called, in this action creator there is a post request done, that passes token that the callback receives
-            there I need to use "stripe" module for express to get information from token, update db data and return updated user data
+            there. I need to use "stripe" module for express to get information from token, update db data and return updated user data
             so reducer can update redux store and header will be updated accordingly. To get information about how to handle this token
             I need to go to stripe.com/docs/api/node#create_charge and in core resources there is a charges category, it is explained there
             how to create a charge object
@@ -458,3 +459,19 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
         - solution (high level):
             - express needs to recognize that it has no specified routes like this and forward request to react-router
             - express needs to know that particular file.js needs to be "used", so right page will appear
+    
+    - deployment options to heroku (in terms of client and how it behaves on prod (no client's server available))
+        - running npm run build on client -> commiting built project -> pushing to heroku (you don't want to push built client like that)
+        - pushing to heroku -> telling heroku about all client dependencies -> heroku builds client project (quite hard version, since a LOT dependencies are used (inc. Babel and Webpack))
+        - pushing CI -> running tests -> CI buold and commits client -> CI pushes build to heroku
+
+    - going with option no. 2 (heroku node.js support for more info -> customizing build process)
+        - pushing to heroku
+        - heroku install server dependencies
+        - heroku runs 'heroku-postbuild'
+        - telling heroku to install client dependencies inside above script
+        - telling heroku to run 'npm run build'
+    
+    - steps to do to deploy (in practice)
+        - package.json inside server (adding new script) - installing and building all client dependencies
+            "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix client && npm run build --prefix client"
