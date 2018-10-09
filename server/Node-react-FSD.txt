@@ -524,10 +524,52 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
                                          and I can get the data using their api), this process is a webhook
     
     
-    - sendgrid
+    - sendgrid (it is good for statistics, but for regular mailing there are some more friendly mailers)
         - setup
             - creating api key on the site
             - adding it to prod and dev
             - installing sendgrid dependency in server
         - mailer setup
-        
+            - using mailer in route (with saving user and survey)
+                
+                //sending email
+	        	const mailer = new Mailer(survey, surveyTemplate(survey));
+	        	try { 
+	        		await mailer.send();
+	        		await survey.save();
+	        		req.user.credits -= 1;
+	        		const user = await req.user.save();
+	        		res.send(user);
+	        	} catch (err) {
+	        		console.log(err);
+	        		res.status(422).send(err);
+	        	}
+
+        - mailer specifics implemented in Mailer.js (things that are copy-paste from sendgrid's docs and couple helper functions)
+            - everything is done in constructor, that creates one mailer with one content for all users
+
+- using materialize icons
+    - adding link to index.html 
+    - using icons like:
+        <a className="btn-floating btn-large red">
+          <i className="large material-icons">add</i>
+        </a>
+
+- redux form (every input change is saved in redux store) - best to use in situation like mine (data needs to be past between siblings)
+    - formReducer is managed entirely in ReduxForm, it records all values from form automatically
+
+    - setting up
+        - npm i -S redux-form
+        - getting started guide
+        - there is good setup guide in getting started section of redux form
+        - adding reducer form redux-form to index.js reducer (importants import { reducer as reduxForm} and form: reduxForm in combineReducers call)
+
+    - creating forms
+        - using reduxForm helper (like connect method from react-redux)
+            export default reduxForm({
+              form: 'surveyForm'
+            })(SurveyForm);
+
+        - creating elements
+            - importing Field elements
+            - creating fields
