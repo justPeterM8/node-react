@@ -18,7 +18,7 @@ class App extends Component {
     return (
       <div>
         <BrowserRouter>
-          <div className="container-fluid">
+          <div className="container">
             <Header />
             <Switch>
               <Route path="/surveys/new" component={SurveyNew} />

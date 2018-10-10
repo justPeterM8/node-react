@@ -573,3 +573,64 @@ THIS ARE MY NOTES DURING DOING THE COURSE (yes, there are some obvious things he
         - creating elements
             - importing Field elements
             - creating fields
+                <Field (basic)
+                    type="text" 
+                    name="title" // key that tells redux form what data it is
+                    component={SurveyField} // tell what type of html tag it is, there is option with own component
+                />
+            after passing component it automatically receives set of props, there are functions like (in props.input):
+                - onBlur
+                - onChange
+                - onDragStart
+                - onDrop
+                - onFocus
+            I also get type of element, that is passed to Field tag 
+    
+    - validating user input
+        - enabling validation
+            export default reduxForm({
+              validate, // adding this line enables validate function that works with redux form and maps errors.name to fields
+              form: "surveyForm"
+            })(SurveyForm);
+
+        - validation function
+            function validate(values) {
+              const errors = {};
+
+              errors.list = validateEmails(values.list || '');
+
+              _.each(FIELDS, ({ name }) => {
+                if (!values[name]){
+                  errors[name] = `You must provide ${name}`; // another approach is to specify another property for that in fields
+                }
+              });
+
+              return errors;
+            }
+
+            errors.nameOfField can hold any error message when field is not filled in with valid data
+
+    - making a wizard form, that is a 2 step form validation (input data and review step)
+        - creating SurveyNew component that renders SurveyForm or SurveyFormReview and decides basing on a state property whether
+          this or this component is displayed (2 functions that are onClicks are used in onHandleSubmit from redux form and onClick from back button)
+
+    - persisting form data
+        - just connecting SurveyFormReview component to redux, there is stored set of input data with values given
+
+    - exporting and importing an array
+        export default [
+          { label: "Survey Title", name: "title" },
+          { label: "Subject Line", name: "subject" },
+          { label: "Email Body", name: "body" },
+          { label: "Recipient List", name: "list" }
+        ];
+
+        this can be now imported like every other component
+
+    - dumping data outside of SurveyNew that is a wrapper for SurveyForm and SurveyFormReview
+        - in SurveyNew just connect this component to reduxForm, but only with:
+            export default reduxForm({
+              form: 'surveyForm'
+            })(SurveyNew);
+
+            the difference with not passing destroyOnUnmount: false makes form dump data after getting to SurveyNew
